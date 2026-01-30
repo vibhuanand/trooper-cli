@@ -8,7 +8,7 @@ import (
 // This avoids global state and makes the CLI easier to test and extend.
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:           "trooper",
+		Use:           "troop",
 		Short:         "Trooper: modular DevOps/Infra automation CLI.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
