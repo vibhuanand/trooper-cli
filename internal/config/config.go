@@ -11,10 +11,21 @@ type Project struct {
 }
 
 type Workflow struct {
-	Name  string `yaml:"name"`
-	Steps []Step `yaml:"steps"`
+	Name    string `yaml:"name"`
+	Workdir string `yaml:"workdir,omitempty"`
+	Steps   []Step `yaml:"steps"`
 }
 
 type Step struct {
-	Run string `yaml:"run"`
+	// Workdir overrides the workflow workdir for this step (optional)
+	Workdir string `yaml:"workdir,omitempty"`
+
+	// Mutually exclusive step types (exactly one should be set)
+	Run       string    `yaml:"run,omitempty"`
+	Terraform *ToolStep `yaml:"terraform,omitempty"`
+	Kubectl   *ToolStep `yaml:"kubectl,omitempty"`
+}
+
+type ToolStep struct {
+	Args []string `yaml:"args"`
 }
