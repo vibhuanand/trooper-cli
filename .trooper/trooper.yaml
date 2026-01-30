@@ -1,0 +1,7 @@
+version: v1
+project:
+  name: trooper-demo
+workflows:
+  - name: validate
+    steps:
+      - run: echo "hello from trooper"
