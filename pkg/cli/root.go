@@ -16,6 +16,7 @@ func NewRootCmd() *cobra.Command {
 
 	rootCmd.AddCommand(newHealthCmd())
 	rootCmd.AddCommand(newVersionCmd())
+	rootCmd.AddCommand(newCompletionCmd())
 
 	return rootCmd
 }
