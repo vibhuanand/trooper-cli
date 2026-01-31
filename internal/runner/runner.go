@@ -6,16 +6,25 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/vibhuanand/trooper-cli/internal/config"
 )
 
 type Runner struct {
-	Shell string
+	Shell  string
+	DryRun bool
+	Out    *os.File
+	Err    *os.File
 }
 
 func New() *Runner {
-	return &Runner{Shell: "sh"}
+	return &Runner{
+		Shell:  "sh",
+		DryRun: false,
+		Out:    os.Stdout,
+		Err:    os.Stderr,
+	}
 }
 
 func (r *Runner) RunWorkflow(ctx context.Context, wf config.Workflow) error {
@@ -56,11 +65,16 @@ func effectiveWorkdir(wfDir, stepDir string) string {
 }
 
 func (r *Runner) runShell(ctx context.Context, workflow string, stepNum int, cmdStr string, workdir string) error {
-	fmt.Fprintf(os.Stdout, "==> %s: step %d: run: %s\n", workflow, stepNum, cmdStr)
+	display := fmt.Sprintf("run: %s", cmdStr)
+	r.printStep(workflow, stepNum, display, workdir)
+
+	if r.DryRun {
+		return nil
+	}
 
 	cmd := exec.CommandContext(ctx, r.Shell, "-c", cmdStr)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = r.Out
+	cmd.Stderr = r.Err
 	cmd.Stdin = os.Stdin
 
 	if workdir != "" {
@@ -74,7 +88,12 @@ func (r *Runner) runShell(ctx context.Context, workflow string, stepNum int, cmd
 }
 
 func (r *Runner) runTool(ctx context.Context, workflow string, stepNum int, tool string, args []string, workdir string) error {
-	fmt.Fprintf(os.Stdout, "==> %s: step %d: %s %v\n", workflow, stepNum, tool, args)
+	display := fmt.Sprintf("%s %s", tool, strings.Join(args, " "))
+	r.printStep(workflow, stepNum, display, workdir)
+
+	if r.DryRun {
+		return nil
+	}
 
 	path, err := exec.LookPath(tool)
 	if err != nil {
@@ -82,8 +101,8 @@ func (r *Runner) runTool(ctx context.Context, workflow string, stepNum int, tool
 	}
 
 	cmd := exec.CommandContext(ctx, path, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = r.Out
+	cmd.Stderr = r.Err
 	cmd.Stdin = os.Stdin
 
 	if workdir != "" {
@@ -94,4 +113,12 @@ func (r *Runner) runTool(ctx context.Context, workflow string, stepNum int, tool
 		return fmt.Errorf("workflow %q step %d failed (%s): %w", workflow, stepNum, tool, err)
 	}
 	return nil
+}
+
+func (r *Runner) printStep(workflow string, stepNum int, what string, workdir string) {
+	if workdir == "" {
+		fmt.Fprintf(r.Out, "==> %s: step %d: %s\n", workflow, stepNum, what)
+		return
+	}
+	fmt.Fprintf(r.Out, "==> %s: step %d (workdir=%s): %s\n", workflow, stepNum, workdir, what)
 }

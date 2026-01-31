@@ -13,6 +13,8 @@ import (
 
 func newRunCmd() *cobra.Command {
 	var cfgPath string
+	var dryRun bool
+	var shell string
 
 	cmd := &cobra.Command{
 		Use:   "run <workflow>",
@@ -36,10 +38,17 @@ func newRunCmd() *cobra.Command {
 			}
 
 			r := runner.New()
+			r.DryRun = dryRun
+			if shell != "" {
+				r.Shell = shell
+			}
+
 			return r.RunWorkflow(context.Background(), *wf)
 		},
 	}
 
 	cmd.Flags().StringVar(&cfgPath, "config", "", "Path to config file (default .trooper/trooper.yaml)")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print steps without executing them")
+	cmd.Flags().StringVar(&shell, "shell", "", "Shell to use for run steps (default sh)")
 	return cmd
 }
